@@ -46,16 +46,10 @@
 	</dependencyManagement>
 
 	<dependencies>
-		<!-- Spring AI OpenAI model -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-starter-model-openai</artifactId>
-		</dependency>
-
-		<!-- Embabel Agent basic starter (web/console app decides mode) -->
+		<!-- Embabel Agent OpenAI model and platform starter -->
 		<dependency>
 			<groupId>com.embabel.agent</groupId>
-			<artifactId>embabel-agent-starter</artifactId>
+			<artifactId>embabel-agent-starter-openai</artifactId>
 		</dependency>
 
 		<!-- Optional: actuator if you want observability like in the reference -->

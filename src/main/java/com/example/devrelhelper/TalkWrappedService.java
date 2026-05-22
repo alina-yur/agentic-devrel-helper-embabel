@@ -1,6 +1,10 @@
 package com.example.devrelhelper;
 
 import com.example.devrelhelper.model.*;
+import com.embabel.agent.api.common.Ai;
+import com.embabel.agent.api.annotation.AchievesGoal;
+import com.embabel.agent.api.annotation.Action;
+import com.embabel.agent.api.annotation.Agent;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -8,34 +12,39 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
+@Agent(
+        name = "talk-promotion-agent",
+        description = "Generate practical DevRel promotion assets from talk metadata and demo links."
+)
 public class TalkWrappedService {
-    private final com.embabel.agent.core.Ai ai;
 
-    public TalkWrappedService(com.embabel.agent.core.Ai ai) {
-        this.ai = ai;
-    }
-
-    public TalkWrapped generate(Talk in) {
+    @Action(description = "Generate structured talk promotion assets.")
+    @AchievesGoal(description = "Create tweets and a blog outline for a conference talk.")
+    public TalkWrapped generate(Talk in, Ai ai) {
         var prompt = template()
-                .replace("${title}", in.title())
-                .replace("${conference}", in.conference())
-                .replace("${shortDesc}", in.shortDesc())
+                .replace("${title}", orEmpty(in.title()))
+                .replace("${conference}", orEmpty(in.conf()))
+                .replace("${location}", orEmpty(in.location()))
                 .replace("${demos}", String.join(", ", in.demos() == null ? List.of() : in.demos()));
-        return ai.withAutoLlm().createObject(prompt, TalkWrapped.class);
+        return ai.withAutoLlm().creating(TalkWrapped.class).fromPrompt(prompt);
     }
 
-    public String toText(Talk in, TalkWrapped t) {
+    public static String toText(Talk in, TalkWrapped t) {
         var b = new StringBuilder();
         b.append("TITLE: ").append(in.title()).append("\n");
-        b.append("CONFERENCE: ").append(in.conference()).append("\n");
-        b.append("DESCRIPTION: ").append(in.shortDesc()).append("\n\n");
+        b.append("CONFERENCE: ").append(in.conf()).append("\n");
+        b.append("LOCATION: ").append(in.location()).append("\n");
+        if (in.conferenceUrl() != null && !in.conferenceUrl().isBlank()) {
+            b.append("CONFERENCE URL: ").append(in.conferenceUrl()).append("\n");
+        }
+        b.append("\n");
 
         b.append("TWEETS:\n");
         t.tweets().forEach(s -> b.append("- ").append(s).append("\n"));
         b.append("\n");
 
         b.append("BLOG TITLE:\n").append(t.blogTitle()).append("\n\n");
-        b.append("BLOG LEDE:\n").append(t.blogLede()).append("\n\n");
+        b.append("BLOG OVERVIEW:\n").append(t.blogOverview()).append("\n\n");
 
         b.append("BLOG SECTIONS:\n");
         for (var s : t.blogSections()) {
@@ -59,5 +68,9 @@ public class TalkWrappedService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String orEmpty(String s) {
+        return s == null ? "" : s;
     }
 }
